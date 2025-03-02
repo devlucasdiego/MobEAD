@@ -1,28 +1,36 @@
 pipeline {
+    agent any
+
     environment {
         registry = "lucasdiego/mobead_image_build"
-        registryCredential = 'DockerHub'
-        dockerImage = ''
+        registryCredential = 'Dockerhub'
+        dockerImage = 'image=$image'
     }
-    agent any
+
     stages {
-        stage('Lint Dockerfile') {
+        stage('Checkout') {
             steps {
-                echo "Pipeline Usando Jenkinsfile"
-                sh 'docker run --rm -i hadolint/hadolint < Dockerfile'
+                // Fazendo o checkout do repositório do GitHub
+                git branch: 'feature-ci-cd', url: 'https://github.com/devlucasdiego/MobEAD.git'
             }
         }
+
         stage('Build image') {
             steps {
                 script {
+                    // Verifica se o Dockerfile está presente
+                    sh 'ls -lah'  // Isso ajuda a verificar se o Dockerfile está no diretório correto
+                    // Construa a imagem Docker com base no Dockerfile presente
                     dockerImage = docker.build registry + ":$BUILD_NUMBER"
                 }
             }
         }
+
         stage('Delivery image') {
             steps {
                 script {
-                    docker.withRegistry('https://registry-1.docker.io/v2/', registryCredential) {
+                    // Fazendo o push da imagem para o Docker Hub
+                    docker.withRegistry('https://registry-1.docker.io/v2/', 'Dockerhub') {
                         dockerImage.push("$BUILD_NUMBER")
                     }
                 }
